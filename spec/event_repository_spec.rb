@@ -145,5 +145,28 @@ module RailsEventStoreActiveRecord
         repository.create(TestDomainEvent.new(event_id: '2'), 'stream', :any)
       end.not_to raise_error
     end
+
+    it 'threads OMG' do
+      threads_count = 5
+      do_wait       = true
+      failures      = 0
+
+      repository.create(TestDomainEvent.new(event_id: SecureRandom.uuid), 'stream', :none)
+      threads = threads_count.times.map do |id|
+        Thread.new do
+          nil while do_wait
+          ActiveRecord::Base.connection_pool.with_connection do
+            begin
+              repository.create(TestDomainEvent.new(event_id: SecureRandom.uuid), 'stream', 1)
+            rescue RubyEventStore::WrongExpectedEventVersion
+              failures += 1
+            end
+          end
+        end
+      end
+      do_wait = false
+      threads.each(&:join)
+      expect(failures).to eq(threads_count - 1)
+    end
   end
 end

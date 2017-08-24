@@ -8,10 +8,10 @@ require 'rails_event_store_active_record'
 
 RSpec.configure do |config|
   config.around(:each) do |example|
-    ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: ':memory:')
+    ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: 'tmp/test.db', timeout: 5_000)
     ActiveRecord::Schema.define do
       self.verbose = false
-      create_table(:event_store_events) do |t|
+      create_table(:event_store_events, force: true) do |t|
         t.string      :event_type,  null: false
         t.string      :event_id,    null: false
         t.text        :metadata
@@ -19,13 +19,13 @@ RSpec.configure do |config|
         t.datetime    :created_at,  null: false
       end
 
-      create_table(:event_store_streams) do |t|
+      create_table(:event_store_streams, force: true) do |t|
         t.string   :name,        null: false
         t.string   :version,     null: false
         t.datetime :created_at,  null: false
       end
 
-      create_table(:event_store_streams_events, id: false) do |t|
+      create_table(:event_store_streams_events, force: true, id: false) do |t|
         t.integer :stream_id, null: false
         t.integer :event_id,  null: false
       end
